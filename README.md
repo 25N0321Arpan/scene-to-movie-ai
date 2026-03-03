@@ -285,4 +285,3 @@ Please follow PEP 8 and add type hints to all public functions.
 ## 📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.
-Text to video 
