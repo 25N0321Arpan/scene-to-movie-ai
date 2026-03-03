@@ -26,14 +26,15 @@ logger = get_logger(__name__)
 class PipelineConfig(BaseModel):
     """All configuration needed to run the anime pipeline end-to-end."""
 
-    story_provider: str = "openai"
-    story_model: str = "gpt-4"
+    story_provider: str = "gemini"
+    story_model: str = "gemini-2.0-flash"
     temperature: float = 0.8
     num_scenes: int = 5
-    design_provider: str = "stability"
+    design_provider: str = "huggingface"
     design_style: str = "anime"
     animation_provider: str = "local"
-    voice_model: str = "eleven_multilingual_v2"
+    voice_provider: str = "edge-tts"
+    voice_model: str = "en-US-AriaNeural"
     output_format: str = "mp4"
     fps: int = 24
     resolution: str = "1920x1080"
@@ -52,14 +53,15 @@ class PipelineConfig(BaseModel):
         with open(path) as f:
             data = yaml.safe_load(f)
         return cls(
-            story_provider=data.get("story", {}).get("provider", "openai"),
-            story_model=data.get("story", {}).get("model", "gpt-4"),
+            story_provider=data.get("story", {}).get("provider", "gemini"),
+            story_model=data.get("story", {}).get("model", "gemini-2.0-flash"),
             temperature=data.get("story", {}).get("temperature", 0.8),
             num_scenes=data.get("story", {}).get("num_scenes", 5),
-            design_provider=data.get("design", {}).get("provider", "stability"),
+            design_provider=data.get("design", {}).get("provider", "huggingface"),
             design_style=data.get("design", {}).get("style", "anime"),
             animation_provider=data.get("animation", {}).get("provider", "local"),
-            voice_model=data.get("voice", {}).get("default_model", "eleven_multilingual_v2"),
+            voice_provider=data.get("voice", {}).get("provider", "edge-tts"),
+            voice_model=data.get("voice", {}).get("default_model", "en-US-AriaNeural"),
             output_format=data.get("editing", {}).get("output_format", "mp4"),
             fps=data.get("editing", {}).get("fps", 24),
             resolution=data.get("editing", {}).get("resolution", "1920x1080"),
@@ -200,14 +202,23 @@ class AnimePipeline:
 
     def _run_step4(self, script: Script, project_dir: Path) -> dict:
         logger.info("[Step 4/5] Synthesizing voices...")
-        synth = VoiceSynthesizer(model=self.config.voice_model)
+        synth = VoiceSynthesizer(
+            provider=self.config.voice_provider,
+            model=self.config.voice_model,
+        )
         audio_clips: dict = {}
 
         for scene in script.scenes:
-            voice_map = {
-                char.name: synth.profile_manager.get_voice_id(char.name)
-                for char in script.characters
-            }
+            if self.config.voice_provider == "edge-tts":
+                voice_map = {
+                    char.name: synth.profile_manager.get_edge_tts_voice(char.name)
+                    for char in script.characters
+                }
+            else:
+                voice_map = {
+                    char.name: synth.profile_manager.get_voice_id(char.name)
+                    for char in script.characters
+                }
             clips = synth.synthesize_scene_dialogue(scene, voice_map)
             audio_clips[scene.scene_number] = clips
             logger.info(f"  Voice synthesized: Scene {scene.scene_number}")

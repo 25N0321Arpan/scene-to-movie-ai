@@ -1,4 +1,4 @@
-"""Script generation using LLM backends (OpenAI / Anthropic)."""
+"""Script generation using LLM backends (OpenAI / Anthropic / Google Gemini)."""
 from __future__ import annotations
 
 import json
@@ -22,8 +22,9 @@ class ScriptGenerator:
     """Generates and refines anime scripts via a configurable LLM provider.
 
     Args:
-        provider: ``"openai"`` or ``"anthropic"``.
-        model: Model identifier (e.g. ``"gpt-4"`` or ``"claude-3-opus-20240229"``).
+        provider: ``"openai"``, ``"anthropic"``, or ``"gemini"``.
+        model: Model identifier (e.g. ``"gpt-4"``, ``"claude-3-opus-20240229"``,
+               or ``"gemini-2.0-flash"``).
         temperature: Sampling temperature for the LLM.
     """
 
@@ -45,8 +46,13 @@ class ScriptGenerator:
             self.client = anthropic.Anthropic(
                 api_key=os.getenv("ANTHROPIC_API_KEY")
             )
+        elif provider == "gemini":
+            import google.generativeai as genai
+            genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
         else:
-            raise ValueError(f"Unknown provider: {provider!r}. Choose 'openai' or 'anthropic'.")
+            raise ValueError(
+                f"Unknown provider: {provider!r}. Choose 'openai', 'anthropic', or 'gemini'."
+            )
 
     # ------------------------------------------------------------------
     # Public methods
@@ -148,6 +154,12 @@ class ScriptGenerator:
                 )
                 content = response.content[0].text if response.content else ""
                 return content.strip()
+
+            elif self.provider == "gemini":
+                import google.generativeai as genai
+                combined_prompt = f"{system}\n\n{user}"
+                response = genai.GenerativeModel(self.model).generate_content(combined_prompt)
+                return response.text.strip()
 
         except Exception as exc:
             raise RuntimeError(f"LLM call failed ({self.provider}): {exc}") from exc

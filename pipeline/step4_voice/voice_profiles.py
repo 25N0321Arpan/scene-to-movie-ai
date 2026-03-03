@@ -37,6 +37,20 @@ DEFAULT_VOICES: Dict[str, str] = {
     "default": "21m00Tcm4TlvDq8ikWAM",     # Rachel fallback
 }
 
+# Default Edge TTS voice names — free, no API key required
+# See: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support
+EDGE_TTS_VOICES: Dict[str, str] = {
+    "narrator": "en-US-AriaNeural",       # English female (narrator)
+    "hero": "en-US-GuyNeural",            # English male
+    "heroine": "en-US-JennyNeural",       # English female
+    "villain": "en-US-DavisNeural",       # English male (deeper)
+    "support": "en-US-JaneNeural",        # English female (support)
+    # Japanese anime voices
+    "hero_ja": "ja-JP-KeitaNeural",       # Japanese male
+    "heroine_ja": "ja-JP-NanamiNeural",   # Japanese female
+    "default": "en-US-AriaNeural",        # Default fallback
+}
+
 
 class VoiceProfileManager:
     """Manage voice profiles for all characters in a project."""
@@ -94,3 +108,24 @@ class VoiceProfileManager:
             f"No voice profile for '{character_name}', using default voice"
         )
         return DEFAULT_VOICES["default"]
+
+    def get_edge_tts_voice(self, character_name: str) -> str:
+        """Return the Edge TTS voice name for a character.
+
+        Matches character names to roles heuristically, falling back to the
+        ``"default"`` Edge TTS voice.
+
+        Args:
+            character_name: Character name to look up.
+
+        Returns:
+            Edge TTS voice name string.
+        """
+        name_lower = character_name.lower()
+        if name_lower in EDGE_TTS_VOICES:
+            return EDGE_TTS_VOICES[name_lower]
+        # Heuristic role matching
+        for role in ("narrator", "hero", "heroine", "villain", "support"):
+            if role in name_lower:
+                return EDGE_TTS_VOICES[role]
+        return EDGE_TTS_VOICES["default"]

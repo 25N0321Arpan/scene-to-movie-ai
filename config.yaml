@@ -1,25 +1,25 @@
 story:
-  provider: "openai"
-  model: "gpt-4"
+  provider: "gemini"
+  model: "gemini-2.0-flash"
   temperature: 0.8
   num_scenes: 5
 
 design:
-  provider: "stability"
-  model: "stable-diffusion-xl"
+  provider: "huggingface"
+  model: "stabilityai/stable-diffusion-xl-base-1.0"
   style: "anime"
-  width: 1920
-  height: 1080
+  width: 1024
+  height: 1024
   lora_models: []
 
 animation:
-  provider: "pika"
+  provider: "local"
   duration_per_scene: 5.0
   fps: 24
 
 voice:
-  provider: "elevenlabs"
-  default_model: "eleven_multilingual_v2"
+  provider: "edge-tts"
+  default_model: "en-US-AriaNeural"
 
 editing:
   output_format: "mp4"

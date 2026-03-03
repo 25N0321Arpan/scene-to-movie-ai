@@ -1,4 +1,4 @@
-"""Character design using Stability AI / Stable Diffusion."""
+"""Character design using Stability AI / Stable Diffusion / Hugging Face."""
 from __future__ import annotations
 
 import base64
@@ -19,16 +19,19 @@ ImagePath = Path
 
 _STABILITY_API_URL = "https://api.stability.ai/v1/generation/{engine}/text-to-image"
 _DEFAULT_ENGINE = "stable-diffusion-xl-1024-v1-0"
+_DEFAULT_HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0"
 
 
 class CharacterDesigner:
     """Generate character reference sheets and in-scene character images.
 
     Args:
-        provider: Image generation backend (``"stability"`` supported).
+        provider: Image generation backend (``"stability"``, ``"huggingface"``,
+                  or ``"local"``).
         style: Visual style descriptor injected into prompts.
         width: Output image width in pixels.
         height: Output image height in pixels.
+        model: Model identifier (used for HuggingFace provider).
     """
 
     def __init__(
@@ -37,11 +40,13 @@ class CharacterDesigner:
         style: str = "anime",
         width: int = 1920,
         height: int = 1080,
+        model: str = _DEFAULT_HF_MODEL,
     ):
         self.provider = provider
         self.style = style
         self.width = width
         self.height = height
+        self.model = model
         self.api_key = os.getenv("STABILITY_API_KEY")
         self.lora_manager = LoRAManager()
 
@@ -67,7 +72,10 @@ class CharacterDesigner:
             prompt = self._build_character_prompt(character, style) + f", {pose}"
             output_path = Path(tempfile.mkdtemp()) / f"{character.name}_{pose.replace(' ', '_')}.png"
             try:
-                img_path = self._call_stability_api(prompt, output_path)
+                if self.provider == "huggingface":
+                    img_path = self._call_huggingface_api(prompt, output_path)
+                else:
+                    img_path = self._call_stability_api(prompt, output_path)
                 images.append(img_path)
             except Exception as exc:
                 logger.warning(f"Character sheet generation failed for '{character.name}' ({pose}): {exc}")
@@ -95,6 +103,8 @@ class CharacterDesigner:
             Path(tempfile.mkdtemp())
             / f"{character.name}_scene_{scene.scene_number}.png"
         )
+        if self.provider == "huggingface":
+            return self._call_huggingface_api(prompt, output_path)
         return self._call_stability_api(prompt, output_path)
 
     # ------------------------------------------------------------------
@@ -173,6 +183,34 @@ class CharacterDesigner:
         image_b64 = result["artifacts"][0]["base64"]
         output_path.write_bytes(base64.b64decode(image_b64))
         logger.info(f"Saved character image: {output_path}")
+        return output_path
+
+    def _call_huggingface_api(self, prompt: str, output_path: Path) -> ImagePath:
+        """Call the Hugging Face Inference API for text-to-image generation.
+
+        Falls back to a placeholder PNG when the API call fails.
+
+        Args:
+            prompt: Text prompt for image generation.
+            output_path: Destination file path.
+
+        Returns:
+            Path to the saved image file.
+        """
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            from huggingface_hub import InferenceClient
+
+            hf_api_key = os.getenv("HUGGINGFACE_API_KEY")
+            client = InferenceClient(token=hf_api_key)
+            image = client.text_to_image(prompt, model=self.model)
+            image.save(output_path)
+            logger.info(f"Saved character image (HuggingFace): {output_path}")
+        except Exception as exc:
+            logger.warning(f"HuggingFace API call failed: {exc} — writing placeholder image")
+            _write_placeholder(output_path, self.width, self.height)
+
         return output_path
 
 
