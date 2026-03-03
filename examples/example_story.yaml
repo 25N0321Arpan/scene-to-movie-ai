@@ -1,0 +1,15 @@
+title: "The Samurai and the Digital World"
+prompt: >
+  A young samurai named Kaito discovers a portal to a futuristic digital realm
+  where ancient spirits have been enslaved by a corrupt AI. With his katana and
+  newfound cyber-powers, he must free the spirits and restore balance between
+  the physical and digital worlds.
+num_scenes: 5
+style: "anime"
+characters:
+  - name: "Kaito"
+    role: "hero"
+  - name: "Yuki"
+    role: "support"
+  - name: "Nexus"
+    role: "villain"
