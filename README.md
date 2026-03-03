@@ -40,15 +40,17 @@ Story Idea
 
 ## ✨ Features
 
-- **AI Script Generation** — GPT-4 or Claude produces a structured, multi-scene anime
-  script (characters, dialogue, mood cues) from a plain-English prompt.
-- **AI Image Generation** — Stability AI SDXL creates character sheets and scene
-  backgrounds in your chosen art style.
+- **AI Script Generation** — GPT-4, Claude, or **Gemini 2.0 Flash (free)** produces a
+  structured, multi-scene anime script (characters, dialogue, mood cues) from a plain-English
+  prompt.
+- **AI Image Generation** — Stability AI SDXL or **Hugging Face Inference API (free)** creates
+  character sheets and scene backgrounds in your chosen art style.
 - **LoRA Support** — Register per-character LoRA weights for visual consistency.
 - **Animation** — Pika Labs or Runway Gen-2 animate still images; local OpenCV
   Ken-Burns pan/zoom fallback requires no API key.
 - **Voice Acting** — ElevenLabs synthesizes each dialogue line with character-specific
-  voices; silent-WAV fallback when no key is set.
+  voices; **Edge TTS (completely free, 300+ voices)** is the default; silent-WAV fallback
+  when no key is set.
 - **Post-Production** — FFmpeg handles audio mixing, subtitle burning, crossfade
   transitions, and H.264/AAC final export.
 - **CLI Interface** — `click`-powered command line with `--prompt`, `--config`,
@@ -59,20 +61,51 @@ Story Idea
 
 ---
 
+## 🆓 Free Mode
+
+Run the **entire pipeline for free** — no credit card required.
+
+| Step | Free Provider | Key Required? |
+|---|---|---|
+| Script Generation | Google Gemini 2.0 Flash | ✅ Free key from [aistudio.google.com](https://aistudio.google.com) |
+| Image Generation | Hugging Face Inference API | ⚡ Optional (many models work without auth) |
+| Animation | Local OpenCV | ❌ No key needed |
+| Voice Synthesis | Edge TTS | ❌ No key needed — 300+ voices |
+| Editing & Render | FFmpeg | ❌ No key needed |
+
+### Quick Start (Free Mode)
+
+```bash
+# 1. Get a free Gemini key from https://aistudio.google.com
+# 2. Add to .env:
+echo "GOOGLE_API_KEY=your_key" > .env
+
+# 3. Run!
+python main.py --prompt "A samurai discovers a hidden digital world"
+```
+
+Free tier limits: Gemini gives 15 requests/min and 1 M tokens/day — more than enough for a full
+anime episode.
+
+---
+
 ## 📋 Prerequisites
 
 | Requirement | Version |
 |---|---|
 | Python | ≥ 3.10 |
 | FFmpeg | ≥ 4.4 (must be in `PATH`) |
-| OpenAI API key | For script generation (default) |
-| Anthropic API key | Alternative script backend |
-| Stability AI key | For image generation |
-| Pika / Runway key | For cloud animation (optional) |
-| ElevenLabs key | For voice synthesis (optional) |
+| Google API key | For Gemini script generation (free default) |
+| OpenAI API key | Alternative script backend (paid) |
+| Anthropic API key | Alternative script backend (paid) |
+| Hugging Face key | For HF image generation (optional, free) |
+| Stability AI key | Alternative image backend (paid) |
+| Pika / Runway key | For cloud animation (optional, paid) |
+| ElevenLabs key | For ElevenLabs voice synthesis (optional, paid) |
 
-> **Tip:** The pipeline runs without any API keys using local OpenCV animation and
-> silent-audio placeholders — useful for testing the full flow.
+> **Tip:** With just a free Google Gemini API key you get a fully working pipeline —
+> Hugging Face image generation, local OpenCV animation, and Edge TTS voice synthesis
+> all need no additional keys.
 
 ---
 
@@ -172,27 +205,27 @@ python main.py --prompt "..." --config examples/example_config.yaml
 
 ```yaml
 story:
-  provider: "openai"          # "openai" | "anthropic"
-  model: "gpt-4"              # model identifier
+  provider: "gemini"          # "gemini" (free) | "openai" | "anthropic"
+  model: "gemini-2.0-flash"   # model identifier
   temperature: 0.8            # 0.0–1.0 creativity
   num_scenes: 5               # scenes to generate
 
 design:
-  provider: "stability"       # "stability"
-  model: "stable-diffusion-xl"
+  provider: "huggingface"     # "huggingface" (free) | "stability"
+  model: "stabilityai/stable-diffusion-xl-base-1.0"
   style: "anime"              # injected into all prompts
-  width: 1920
-  height: 1080
+  width: 1024
+  height: 1024
   lora_models: []             # list of {character, path} dicts
 
 animation:
-  provider: "pika"            # "pika" | "runway" | "local"
+  provider: "local"           # "local" (free) | "pika" | "runway"
   duration_per_scene: 5.0    # seconds
   fps: 24
 
 voice:
-  provider: "elevenlabs"
-  default_model: "eleven_multilingual_v2"
+  provider: "edge-tts"        # "edge-tts" (free) | "elevenlabs"
+  default_model: "en-US-AriaNeural"
 
 editing:
   output_format: "mp4"
@@ -239,6 +272,11 @@ scene-to-movie-ai/
 Copy `.env.example` to `.env` and fill in your keys:
 
 ```dotenv
+# === FREE PROVIDERS (recommended) ===
+GOOGLE_API_KEY=your_free_gemini_key_here
+HUGGINGFACE_API_KEY=your_free_hf_key_here
+
+# === PAID PROVIDERS (optional) ===
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 STABILITY_API_KEY=sk-...
@@ -247,14 +285,16 @@ RUNWAY_API_KEY=...
 ELEVENLABS_API_KEY=...
 ```
 
-| Key | Where to get it |
-|---|---|
-| `OPENAI_API_KEY` | https://platform.openai.com/api-keys |
-| `ANTHROPIC_API_KEY` | https://console.anthropic.com/ |
-| `STABILITY_API_KEY` | https://platform.stability.ai/ |
-| `PIKA_API_KEY` | https://pika.art/ |
-| `RUNWAY_API_KEY` | https://runwayml.com/ |
-| `ELEVENLABS_API_KEY` | https://elevenlabs.io/ |
+| Key | Where to get it | Cost |
+|---|---|---|
+| `GOOGLE_API_KEY` | https://aistudio.google.com | Free |
+| `HUGGINGFACE_API_KEY` | https://huggingface.co/settings/tokens | Free |
+| `OPENAI_API_KEY` | https://platform.openai.com/api-keys | Paid |
+| `ANTHROPIC_API_KEY` | https://console.anthropic.com/ | Paid |
+| `STABILITY_API_KEY` | https://platform.stability.ai/ | Paid |
+| `PIKA_API_KEY` | https://pika.art/ | Paid |
+| `RUNWAY_API_KEY` | https://runwayml.com/ | Paid |
+| `ELEVENLABS_API_KEY` | https://elevenlabs.io/ | Paid |
 
 ---
 
@@ -263,11 +303,13 @@ ELEVENLABS_API_KEY=...
 | Problem | Fix |
 |---|---|
 | `ffmpeg: command not found` | Install FFmpeg and ensure it's on your `PATH` |
-| `OPENAI_API_KEY not set` | Add the key to `.env` or export as an env var |
-| Stability images are placeholders | Add your `STABILITY_API_KEY` |
-| Animation is just a pan/zoom | No Pika/Runway key — set `animation.provider: local` intentionally or add API keys |
+| `OPENAI_API_KEY not set` | Add the key to `.env` or switch to the free Gemini provider |
+| `GOOGLE_API_KEY not set` | Get a free key from https://aistudio.google.com |
+| Stability images are placeholders | Add your `STABILITY_API_KEY` or switch to `design.provider: huggingface` |
+| Animation is just a pan/zoom | No Pika/Runway key — this is expected with `animation.provider: local` |
 | `ModuleNotFoundError` | Run `pip install -r requirements.txt` |
-| Script JSON parse error | Increase `temperature` slightly or switch to `anthropic` provider |
+| Script JSON parse error | Increase `temperature` slightly or switch provider |
+| Edge TTS not found | Run `pip install edge-tts` |
 
 ---
 

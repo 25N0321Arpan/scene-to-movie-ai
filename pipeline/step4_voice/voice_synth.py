@@ -1,6 +1,7 @@
-"""Voice synthesis using ElevenLabs text-to-speech API."""
+"""Voice synthesis using ElevenLabs / Edge TTS text-to-speech."""
 from __future__ import annotations
 
+import asyncio
 import os
 import tempfile
 from pathlib import Path
@@ -20,15 +21,18 @@ _ELEVENLABS_BASE = "https://api.elevenlabs.io/v1"
 
 
 class VoiceSynthesizer:
-    """Synthesize dialogue audio using ElevenLabs.
+    """Synthesize dialogue audio using ElevenLabs or Edge TTS.
 
-    Falls back to writing a silent placeholder WAV when no API key is set.
+    Falls back to writing a silent placeholder WAV when no API key is set
+    (ElevenLabs provider only).
 
     Args:
-        model: ElevenLabs model identifier.
+        provider: ``"elevenlabs"`` or ``"edge-tts"``.
+        model: ElevenLabs model identifier (used only for ``"elevenlabs"`` provider).
     """
 
-    def __init__(self, model: str = "eleven_multilingual_v2"):
+    def __init__(self, provider: str = "elevenlabs", model: str = "eleven_multilingual_v2"):
+        self.provider = provider
         self.model = model
         self.api_key = os.getenv("ELEVENLABS_API_KEY")
         self.profile_manager = VoiceProfileManager()
@@ -48,14 +52,25 @@ class VoiceSynthesizer:
 
         Args:
             text: Text to speak.
-            voice_id: ElevenLabs voice ID.
-            emotion: Emotion tag (used for logging; ElevenLabs handles prosody
-                     automatically via the model).
+            voice_id: Voice identifier (ElevenLabs voice ID or Edge TTS voice name).
+            emotion: Emotion tag (used for logging).
 
         Returns:
-            :class:`~pathlib.Path` to the synthesized MP3 file.
+            :class:`~pathlib.Path` to the synthesized audio file.
         """
         output_path = Path(tempfile.mkdtemp()) / f"tts_{abs(hash(text))}.mp3"
+
+        if self.provider == "edge-tts":
+            import edge_tts
+            mp3_path = output_path.with_suffix(".mp3")
+
+            async def _run() -> None:
+                communicate = edge_tts.Communicate(text, voice_id)
+                await communicate.save(str(mp3_path))
+
+            asyncio.run(_run())
+            logger.info(f"Synthesized line via Edge TTS ({emotion}): {text[:40]}… → {mp3_path.name}")
+            return mp3_path
 
         if not self.api_key:
             logger.warning("ELEVENLABS_API_KEY not set — writing silent placeholder audio")
