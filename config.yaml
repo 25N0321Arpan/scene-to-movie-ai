@@ -1,0 +1,33 @@
+story:
+  provider: "openai"
+  model: "gpt-4"
+  temperature: 0.8
+  num_scenes: 5
+
+design:
+  provider: "stability"
+  model: "stable-diffusion-xl"
+  style: "anime"
+  width: 1920
+  height: 1080
+  lora_models: []
+
+animation:
+  provider: "pika"
+  duration_per_scene: 5.0
+  fps: 24
+
+voice:
+  provider: "elevenlabs"
+  default_model: "eleven_multilingual_v2"
+
+editing:
+  output_format: "mp4"
+  resolution: "1920x1080"
+  fps: 24
+  codec: "h264"
+  transition: "crossfade"
+  transition_duration: 0.5
+
+output:
+  base_dir: "output"
